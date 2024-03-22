@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -21,6 +22,7 @@ class _AuthScreen extends State<AuthScreen> {
   var _isLogin = true;
   var _enteredEmail = '';
   var _eneterdPassword = '';
+  var _enteredUsername = '';
   File? _selectedImage;
   var _isAuthenticating = false;
 
@@ -50,7 +52,14 @@ class _AuthScreen extends State<AuthScreen> {
         await storageRef.putFile(_selectedImage!);
         final imageUrl = await storageRef.getDownloadURL();
 
-        print(imageUrl);
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredentials.user!.uid)
+            .set({
+          'username': _enteredUsername,
+          'email': _enteredEmail,
+          'image_url': imageUrl,
+        });
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
@@ -121,6 +130,24 @@ class _AuthScreen extends State<AuthScreen> {
                               _enteredEmail = value!;
                             },
                           ),
+                          if (!_isLogin)
+                            TextFormField(
+                              decoration:
+                                  const InputDecoration(labelText: 'Username'),
+                              enableSuggestions: false,
+                              validator: (value) {
+                                if (value == null ||
+                                    value.isEmpty ||
+                                    value.trim().length < 4) {
+                                  return 'Please enter at least 4 characters.';
+                                }
+
+                                return null;
+                              },
+                              onSaved: (value) {
+                                _enteredUsername = value!;
+                              },
+                            ),
                           TextFormField(
                             decoration:
                                 const InputDecoration(labelText: 'Password'),
